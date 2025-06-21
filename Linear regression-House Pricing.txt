@@ -1,0 +1,86 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import (
+    mean_absolute_error, mean_squared_error, r2_score, 
+    mean_absolute_percentage_error, explained_variance_score
+)
+from sklearn.model_selection import train_test_split
+
+# Load dataset
+url = "https://raw.githubusercontent.com/selva86/datasets/master/BostonHousing.csv"
+df = pd.read_csv(url)
+
+# Prepare data
+X = df.drop(columns=["medv"])
+y = df["medv"]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train model
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# Predict
+y_pred = model.predict(X_test)
+
+# --------------------
+# 📊 Regression Metrics
+# --------------------
+mae = mean_absolute_error(y_test, y_pred)
+mse = mean_squared_error(y_test, y_pred)
+rmse = np.sqrt(mse)
+rmsle = np.sqrt(mean_squared_error(
+    np.log1p(np.clip(y_test, 0, None)),
+    np.log1p(np.clip(y_pred, 0, None))
+))
+r2 = r2_score(y_test, y_pred)
+adj_r2 = 1 - (1 - r2) * (len(y_test) - 1) / (len(y_test) - X_test.shape[1] - 1)
+mape = mean_absolute_percentage_error(y_test, y_pred)
+evs = explained_variance_score(y_test, y_pred)
+bias = np.mean(y_pred - y_test)
+rse = np.sqrt(np.sum((y_test - y_pred)**2) / (len(y_test) - 2))
+
+print(f"MAE: {mae:.2f}")
+print(f"MSE: {mse:.2f}")
+print(f"RMSE: {rmse:.2f}")
+print(f"RMSLE: {rmsle:.2f}")
+print(f"MAPE: {mape:.2%}")
+print(f"R² Score: {r2:.2f}")
+print(f"Adjusted R² Score: {adj_r2:.2f}")
+print(f"Explained Variance Score: {evs:.2f}")
+print(f"Bias (Mean Error): {bias:.2f}")
+print(f"Residual Standard Error (RSE): {rse:.2f}")
+
+# --------------------
+# 📈 Visualizations
+# --------------------
+plt.figure(figsize=(6, 4))
+plt.scatter(y_test, y_pred, alpha=0.7)
+plt.plot([0, 50], [0, 50], '--r')
+plt.title("Actual vs Predicted")
+plt.xlabel("Actual MEDV")
+plt.ylabel("Predicted MEDV")
+plt.grid(True)
+plt.show()
+
+# Residuals
+residuals = y_test - y_pred
+
+plt.figure(figsize=(6, 4))
+sns.histplot(residuals, kde=True, bins=25)
+plt.title("Distribution of Residuals")
+plt.xlabel("Residual")
+plt.show()
+
+# KDE Plot
+sns.kdeplot(residuals, fill=True)
+plt.title("Residual KDE Plot")
+plt.show()
+
+# Feature vs Target
+for col in X.columns[:3]:  # Show only first 3 for brevity
+    sns.scatterplot(x=df[col], y=df["medv"])
+    plt.title(f"{col} vs medv")
+    plt.show()
